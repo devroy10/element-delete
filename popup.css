@@ -1,0 +1,172 @@
+/* Popup styles for Element Delete extension */
+:root {
+  --popup-bg: #ffffff;
+  --popup-border: #e1e5e9;
+  --popup-shadow: rgba(0, 0, 0, 0.1);
+  --text-primary: #2c3e50;
+  --text-secondary: #7f8c8d;
+  --accent-primary: #3498db;
+  --accent-secondary: #95a5a6;
+  --success: #27ae60;
+  --warning: #f39c12;
+  --error: #e74c3c;
+  --border-radius: 8px;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --font-size-sm: 12px;
+  --font-size-base: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+  color: var(--text-primary);
+  background: var(--popup-bg);
+}
+
+.popup {
+  width: 320px;
+  min-height: 400px;
+  padding: var(--spacing-md);
+  border: 1px solid var(--popup-border);
+  border-radius: var(--border-radius);
+  box-shadow: 0 4px 12px var(--popup-shadow);
+}
+
+.popup__header {
+  text-align: center;
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--popup-border);
+}
+
+.popup__title {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.popup__subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.popup__main {
+  flex: 1;
+}
+
+.popup__status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm);
+  background: #f8f9fa;
+  border-radius: var(--border-radius);
+  margin-bottom: var(--spacing-md);
+}
+
+.popup__status-label {
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.popup__status-value {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.popup__status-value--active {
+  color: var(--success);
+}
+
+.popup__status-value--inactive {
+  color: var(--text-secondary);
+}
+
+.popup__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
+}
+
+.popup__button {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.popup__button--primary {
+  background: var(--accent-primary);
+  color: white;
+}
+
+.popup__button--primary:hover {
+  background: #2980b9;
+  transform: translateY(-1px);
+}
+
+.popup__button--secondary {
+  background: var(--accent-secondary);
+  color: white;
+}
+
+.popup__button--secondary:hover {
+  background: #7f8c8d;
+  transform: translateY(-1px);
+}
+
+.popup__button:active {
+  transform: translateY(0);
+}
+
+.popup__info {
+  background: #f8f9fa;
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius);
+  margin-bottom: var(--spacing-lg);
+}
+
+.popup__info h3 {
+  font-size: var(--font-size-lg);
+  margin-bottom: var(--spacing-sm);
+  color: var(--text-primary);
+}
+
+.popup__steps {
+  padding-left: var(--spacing-lg);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.popup__steps li {
+  margin-bottom: var(--spacing-xs);
+}
+
+.popup__footer {
+  text-align: center;
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--popup-border);
+}
+
+.popup__version {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}

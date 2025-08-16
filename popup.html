@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Element Delete</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+
+<body>
+    <div class="popup">
+        <header class="popup__header">
+            <h1 class="popup__title">Element Delete</h1>
+            <p class="popup__subtitle">Visual element deletion tool</p>
+        </header>
+
+        <main class="popup__main">
+            <div class="popup__status">
+                <span class="popup__status-label">Status:</span>
+                <span class="popup__status-value" id="statusValue">Inactive</span>
+            </div>
+
+            <div class="popup__actions">
+                <button class="popup__button popup__button--primary" id="toggleButton">
+                    Activate Element Selection
+                </button>
+                <button class="popup__button popup__button--secondary" id="helpButton">
+                    Help
+                </button>
+            </div>
+
+            <div class="popup__info">
+                <h3>How to use:</h3>
+                <ol class="popup__steps">
+                    <li>Click "Activate Element Selection"</li>
+                    <li>Hover over elements to highlight them</li>
+                    <li>Click to select an element</li>
+                    <li>Use the side panel to delete or undo</li>
+                </ol>
+            </div>
+        </main>
+
+        <footer class="popup__footer">
+            <p class="popup__version">v1.0.0</p>
+        </footer>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>

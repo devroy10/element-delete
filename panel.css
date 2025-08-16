@@ -1,0 +1,140 @@
+/* Panel styles for Element Delete extension */
+:root {
+  --panel-bg: #ffffff;
+  --panel-border: #e1e5e9;
+  --panel-shadow: rgba(0, 0, 0, 0.15);
+  --text-primary: #2c3e50;
+  --text-secondary: #7f8c8d;
+  --accent-primary: #3498db;
+  --accent-danger: #e74c3c;
+  --accent-success: #27ae60;
+  --accent-warning: #f39c12;
+  --border-radius: 8px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --highlight-color: rgba(52, 152, 219, 0.3);
+  --highlight-border: #3498db;
+  --selection-color: rgba(231, 76, 60, 0.3);
+  --selection-border: #e74c3c;
+  --z-index-panel: 2147483647;
+  --z-index-highlight: 2147483646;
+}
+
+/* Side Panel */
+.element-delete-panel {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 240px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--border-radius);
+  box-shadow: 0 4px 12px var(--panel-shadow);
+  z-index: var(--z-index-panel);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(100%);
+  transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+}
+
+.element-delete-panel--visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+
+.element-delete-panel__header {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.element-delete-panel__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.element-delete-panel__body {
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.element-delete-panel__status-text {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-align: center;
+  word-wrap: break-word;
+}
+
+.element-delete-panel__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.element-delete-panel__button {
+  padding: var(--spacing-sm);
+  border: 1px solid transparent;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.element-delete-panel__button--delete {
+  background: var(--accent-danger);
+  color: white;
+}
+.element-delete-panel__button--delete:hover:not(:disabled) { background: #c0392b; }
+.element-delete-panel__button--delete:disabled { background: #d3d3d3; cursor: not-allowed; }
+
+.element-delete-panel__button--undo {
+  background: var(--accent-warning);
+  color: white;
+}
+.element-delete-panel__button--undo:hover:not(:disabled) { background: #d68910; }
+.element-delete-panel__button--undo:disabled { background: #d3d3d3; cursor: not-allowed; }
+
+.element-delete-panel__button--cancel {
+  background: #f1f1f1;
+  border-color: #ccc;
+  color: #333;
+}
+.element-delete-panel__button--cancel:hover { background: #e1e1e1; }
+
+
+.element-delete-panel__info {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* Element Highlighting */
+.element-delete-highlight {
+  position: absolute; /* Changed to absolute to scroll with the page */
+  pointer-events: none;
+  z-index: var(--z-index-highlight);
+  border: 2px solid var(--highlight-border);
+  background: var(--highlight-color);
+  transition: all 50ms ease; /* Faster transition for smoother feel */
+  box-sizing: border-box;
+}
+
+.element-delete-highlight--selected {
+  border-color: var(--selection-border);
+  background: var(--selection-color);
+}
+
+/* Apply a crosshair cursor to the whole page when active */
+.element-delete-cursor, .element-delete-cursor * {
+  cursor: crosshair !important;
+}

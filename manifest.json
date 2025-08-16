@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Element Delete",
+  "version": "0.0.1",
+  "description": "Visually delete elements from any webpage with a clean, intuitive interface",
+  "permissions": ["activeTab", "scripting"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["panel.css"],
+      "run_at": "document_end"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Element Delete"
+  },
+  "icons": {
+    "128": "icons/icon.svg"
+  }
+}

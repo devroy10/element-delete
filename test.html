@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Element Delete Extension Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: #f0f0f0;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .content-section {
+            background: #ffffff;
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+
+        .button {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        .button:hover {
+            background: #0056b3;
+        }
+
+        .highlight-box {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .test-element {
+            background: #e9ecef;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>Element Delete Extension Test Page</h1>
+        <p>This page is designed to test the Element Delete Chrome Extension. Try deleting various elements to see how
+            the extension works.</p>
+    </div>
+
+    <div class="content-section">
+        <h2>Test Section 1</h2>
+        <p>This is a paragraph that can be deleted. It contains some sample text to demonstrate the extension's
+            functionality.</p>
+
+        <div class="test-element">
+            <h3>Deletable Element</h3>
+            <p>This entire div block can be removed using the extension.</p>
+            <button class="button">Sample Button</button>
+        </div>
+
+        <p>Another paragraph that can be deleted. This helps test the extension's ability to handle different types of
+            content.</p>
+    </div>
+
+    <div class="content-section">
+        <h2>Test Section 2</h2>
+        <p>This section contains more elements for testing:</p>
+
+        <ul>
+            <li>List item 1 - can be deleted</li>
+            <li>List item 2 - can be deleted</li>
+            <li>List item 3 - can be deleted</li>
+        </ul>
+
+        <div class="highlight-box">
+            <strong>Important Note:</strong> This highlighted box can also be deleted to test the extension's visual
+            feedback.
+        </div>
+
+        <button class="button">Action Button</button>
+        <button class="button">Another Button</button>
+    </div>
+
+    <div class="content-section">
+        <h2>Interactive Elements</h2>
+        <p>Test the extension with interactive elements:</p>
+
+        <form>
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" placeholder="Enter your name">
+            <br><br>
+
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" placeholder="Enter your email">
+            <br><br>
+
+            <button type="submit" class="button">Submit</button>
+            <button type="reset" class="button">Reset</button>
+        </form>
+    </div>
+
+    <div class="footer">
+        <p>This is a footer section that can also be deleted to test the extension's capabilities.</p>
+        <p><small>Test page for Element Delete Chrome Extension</small></p>
+    </div>
+
+    <script>
+        // Add some dynamic content for testing
+        setTimeout(() => {
+            const dynamicSection = document.createElement('div');
+            dynamicSection.className = 'content-section';
+            dynamicSection.innerHTML = `
+                <h2>Dynamically Added Section</h2>
+                <p>This section was added dynamically to test the extension's ability to handle dynamically created content.</p>
+                <div class="test-element">
+                    <p>Dynamic content that can be deleted</p>
+                </div>
+            `;
+            document.body.insertBefore(dynamicSection, document.querySelector('.footer'));
+        }, 2000);
+    </script>
+</body>
+
+</html>
