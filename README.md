@@ -172,15 +172,15 @@ For issues, questions, or contributions:
 
 - Create an issue in the repository
 - Check the troubleshooting section above
-- Review the PRD.md for detailed requirements
+- Review the `./docs/PRD.md` for detailed requirements
 
 ## Roadmap
 
 ### Phase 2
 
-- Multiple undo levels
-- Element history persistence
-- Custom keyboard shortcuts
+- [] Multiple undo levels
+- [] Element history persistence
+- [] Custom keyboard shortcuts
 
 ### Phase 3
 
