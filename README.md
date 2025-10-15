@@ -178,9 +178,9 @@ For issues, questions, or contributions:
 
 ### Phase 2
 
-- [] Multiple undo levels
-- [] Element history persistence
-- [] Custom keyboard shortcuts
+- [ ] Redo edit functionality
+- [ ] Element history persistence
+- [ ] More keyboard shortcuts
 
 ### Phase 3
 
