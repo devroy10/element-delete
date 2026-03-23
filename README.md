@@ -2,7 +2,7 @@
 
 A production-ready Chrome Extension that allows users to visually delete elements from any webpage, mimicking the "delete element" functionality in Chrome DevTools with a clean, intuitive interface.
 
-[![Watch the demo](https://img.youtube.com/vi/GLz7P7WU8Ys/hqdefault.jpg)](https://youtu.be/GLz7P7WU8Ys)
+[![Watch the demo](https://youtu.be/GLz7P7WU8Ys)
 
 ## Features
 
