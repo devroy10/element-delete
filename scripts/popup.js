@@ -1,145 +1,205 @@
-/**
- * Popup functionality for Element Delete extension
- * Handles user interactions and communicates with content script
- */
-
 class PopupManager {
   constructor() {
     this.elements = {
       statusValue: document.getElementById("statusValue"),
-      toggleButton: document.getElementById("toggleButton"),
+      activateButton: document.getElementById("activateButton"),
       helpButton: document.getElementById("helpButton"),
+      helpSteps: document.getElementById("helpSteps"),
+      modeInputs: document.querySelectorAll('input[name="mode"]'),
     };
 
     this.isActive = false;
+    this.currentMode = "delete";
     this.init();
   }
 
-  /**
-   * Initialize popup functionality
-   */
   init() {
     this.bindEvents();
     this.checkExtensionStatus();
   }
 
-  /**
-   * Bind event listeners to UI elements
-   */
   bindEvents() {
-    this.elements.toggleButton.addEventListener("click", () => {
-      this.toggleElementSelection();
+    this.elements.activateButton.addEventListener("click", () => {
+      this.toggleMode();
     });
 
     this.elements.helpButton.addEventListener("click", () => {
       this.showHelp();
     });
 
-    // Listen for messages from content script
-    window.addEventListener("message", (event) => {
-      if (event.data.type === "ELEMENT_DELETE_STATUS_UPDATE") {
-        this.updateStatus(event.data.isActive);
+    this.elements.modeInputs.forEach((input) => {
+      input.addEventListener("change", (e) => {
+        this.currentMode = e.target.value;
+        this.updateActivateButtonLabel();
+        this.updateHelpSteps();
+        if (this.isActive) {
+          this.sendSetMode(this.currentMode);
+        }
+      });
+    });
+  }
+
+  async checkExtensionStatus() {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab) {
+        chrome.tabs.sendMessage(
+          tab.id,
+          { type: "GET_STATUS" },
+          (response) => {
+            if (response) {
+              this.isActive = response.isActive;
+              this.currentMode = response.mode || "delete";
+              this.syncUI();
+            }
+          }
+        );
+      }
+    } catch (error) {
+      console.error("Failed to check status:", error);
+    }
+  }
+
+  async toggleMode() {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab) return;
+
+      if (this.isActive) {
+        chrome.tabs.sendMessage(tab.id, { type: "DEACTIVATE" });
+        this.isActive = false;
+      } else {
+        chrome.tabs.sendMessage(tab.id, {
+          type: "SET_MODE",
+          mode: this.currentMode,
+        });
+        chrome.tabs.sendMessage(tab.id, { type: "ACTIVATE" });
+        this.isActive = true;
+      }
+      this.syncUI();
+    } catch (error) {
+      console.error("Failed to toggle mode:", error);
+    }
+  }
+
+  sendSetMode(mode) {
+    chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+      if (tab) {
+        chrome.tabs.sendMessage(tab.id, { type: "SET_MODE", mode });
       }
     });
   }
 
-  /**
-   * Check current extension status
-   */
-  async checkExtensionStatus() {
-    try {
-      const [tab] = await chrome.tabs.query({
-        active: true,
-        currentWindow: true,
-      });
-
-      if (tab) {
-        // Send message to content script to get current status
-        chrome.tabs.sendMessage(tab.id, { type: "GET_STATUS" }, (response) => {
-          if (response && response.isActive !== undefined) {
-            this.updateStatus(response.isActive);
-          }
-        });
-      }
-    } catch (error) {
-      console.error("Failed to check extension status:", error);
-    }
-  }
-
-  /**
-   * Toggle element selection mode
-   */
-  async toggleElementSelection() {
-    try {
-      const [tab] = await chrome.tabs.query({
-        active: true,
-        currentWindow: true,
-      });
-
-      if (tab) {
-        // Send message to content script to toggle mode
-        chrome.tabs.sendMessage(tab.id, { type: "TOGGLE_ELEMENT_SELECTION" });
-
-        // Update local state
-        this.isActive = !this.isActive;
-        this.updateStatus(this.isActive);
-      }
-    } catch (error) {
-      console.error("Failed to toggle element selection:", error);
-    }
-  }
-
-  /**
-   * Update status display
-   * @param {boolean} isActive - Whether element selection is active
-   */
-  updateStatus(isActive) {
-    this.isActive = isActive;
-
-    if (isActive) {
-      this.elements.statusValue.textContent = "Active";
+  syncUI() {
+    if (this.isActive) {
+      this.elements.statusValue.textContent = `Active (${this.currentMode})`;
       this.elements.statusValue.className =
         "popup__status-value popup__status-value--active";
-      this.elements.toggleButton.textContent = "Deactivate Element Selection";
-      this.elements.toggleButton.className =
-        "popup__button popup__button--primary popup__button--danger";
+      this.elements.activateButton.textContent = "Deactivate";
     } else {
       this.elements.statusValue.textContent = "Inactive";
       this.elements.statusValue.className =
         "popup__status-value popup__status-value--inactive";
-      this.elements.toggleButton.textContent = "Activate Element Selection";
-      this.elements.toggleButton.className =
-        "popup__button popup__button--primary";
+      this.updateActivateButtonLabel();
+    }
+    this.syncModeRadio();
+    this.updateHelpSteps();
+  }
+
+  syncModeRadio() {
+    this.elements.modeInputs.forEach((input) => {
+      input.checked = input.value === this.currentMode;
+    });
+  }
+
+  updateActivateButtonLabel() {
+    if (!this.isActive) {
+      const labels = {
+        delete: "Activate Delete",
+        edit: "Activate Edit Text",
+        screenshot: "Activate Screenshot",
+        blur: "Activate Blur",
+      };
+      this.elements.activateButton.textContent =
+        labels[this.currentMode] || "Activate";
     }
   }
 
-  /**
-   * Show help information
-   */
+  updateHelpSteps() {
+    const steps = {
+      delete: [
+        'Click "Activate Delete" to start',
+        "Hover over elements to highlight them",
+        "Click to select an element",
+        "Press Delete or click 🗑️ Delete Element",
+        "Press Ctrl+Z or click ↩️ Undo to restore",
+      ],
+      edit: [
+        'Click "Activate Edit Text" to start',
+        "Hover over text elements (p, h1, span, etc.)",
+        "Click a text element to make it editable",
+        "Type to edit the text",
+        "Press Enter or click away to save",
+      ],
+      screenshot: [
+        'Click "Activate Screenshot" to start',
+        "Hover over elements to highlight them",
+        "Click to select an element",
+        'Click 📷 Capture Screenshot',
+        "Image saved to your Downloads folder",
+      ],
+      blur: [
+        'Click "Activate Blur" to start',
+        "Hover over elements to highlight them",
+        "Click to select an element",
+        'Click 🔵 Apply & Save Blur',
+        "The blur persists across page reloads",
+      ],
+    };
+
+    const list = this.elements.helpSteps;
+    list.innerHTML = steps[this.currentMode]
+      .map((s) => `<li>${s}</li>`)
+      .join("");
+  }
+
   showHelp() {
-    const helpText = `
-Element Delete Extension Help
-
-Keyboard Shortcuts:
-• Delete key: Delete selected element
-• Ctrl+Z (Cmd+Z on Mac): Undo last deletion
-• Escape: Exit element selection mode
-
-Usage:
-1. Click "Activate Element Selection"
-2. Hover over elements to highlight them
-3. Click to select an element
-4. Use the side panel to delete or undo
-5. Click "Deactivate" or press Escape to exit
-
-Note: Deleted elements are restored when you refresh the page.
+    const helpDiv = document.createElement("div");
+    helpDiv.className = "popup__help-overlay";
+    helpDiv.innerHTML = `
+      <div class="popup__help-content">
+        <h2>PageSurgeon Help</h2>
+        <div class="popup__help-section">
+          <strong>Modes</strong>
+          <p>🗑️ Delete — Remove elements from the page</p>
+          <p>✏️ Edit Text — Edit text content inline</p>
+          <p>📷 Screenshot — Capture element screenshots</p>
+          <p>🔵 Blur — Blur elements persistently</p>
+        </div>
+        <div class="popup__help-section">
+          <strong>Keyboard Shortcuts</strong>
+          <p>• Escape: Exit current mode</p>
+          <p>• Delete: Delete selected element (Delete mode)</p>
+          <p>• Ctrl+Z: Undo deletion (Delete mode)</p>
+          <p>• Enter: Save text (Edit Text mode)</p>
+        </div>
+        <div class="popup__help-section">
+          <strong>Blur Mode</strong>
+          <p>Blurs are saved to browser storage. They re-apply when you visit the page again.</p>
+        </div>
+        <button class="popup__button popup__button--primary" id="helpCloseBtn">Got it</button>
+      </div>
     `;
-
-    alert(helpText);
+    document.body.appendChild(helpDiv);
+    document.getElementById("helpCloseBtn").addEventListener("click", () => {
+      helpDiv.remove();
+    });
+    helpDiv.addEventListener("click", (e) => {
+      if (e.target === helpDiv) helpDiv.remove();
+    });
   }
 }
 
-// Initialize popup when DOM is loaded
 document.addEventListener("DOMContentLoaded", () => {
   new PopupManager();
 });

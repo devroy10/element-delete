@@ -1,19 +1,21 @@
-/**
- * Element Delete Chrome Extension - Content Script
- * Main functionality for element selection, highlighting, and deletion
- */
-
-class ElementDeleteExtension {
+class ModeController {
   constructor() {
+    this.modes = {
+      delete: new DeleteMode(),
+      edit: new EditMode(),
+      screenshot: new ScreenshotMode(),
+      blur: new BlurMode(),
+    };
+
+    this.currentMode = null;
+    this.currentModeName = "delete";
     this.isActive = false;
     this.hoveredElement = null;
     this.selectedElement = null;
     this.highlightBox = null;
     this.sidePanel = null;
-    this.deletedElements = [];
     this.isInitialized = false;
 
-    // Bind 'this' for event handlers once to ensure proper listener removal
     this.handleMouseMove = this.handleMouseMove.bind(this);
     this.handleElementClick = this.handleElementClick.bind(this);
     this.handleKeyDown = this.handleKeyDown.bind(this);
@@ -21,252 +23,214 @@ class ElementDeleteExtension {
     this.init();
   }
 
-  /**
-   * Initialize the extension by creating UI and binding events.
-   */
   init() {
     if (this.isInitialized) return;
-
     try {
       this.createSidePanel();
       this.bindEvents();
+      this.applyPersistentBlurs();
       this.isInitialized = true;
-      console.log("Element Delete extension initialized.");
     } catch (error) {
-      console.error("Failed to initialize Element Delete extension:", error);
+      console.error("PageSurgeon init failed:", error);
     }
   }
 
-  /**
-   * Create the side panel UI and append it to the document.
-   */
+  async applyPersistentBlurs() {
+    try {
+      const { blurRules = [] } = await chrome.storage.local.get("blurRules");
+      const rules = blurRules.filter((r) =>
+        location.hostname.endsWith(r.urlPattern.replace("/*", ""))
+      );
+
+      for (const rule of rules) {
+        const el = document.querySelector(rule.selector);
+        if (el) {
+          el.style.filter = `blur(${rule.blurPx}px)`;
+          el.style.pointerEvents = "none";
+          el.style.userSelect = "none";
+        }
+      }
+
+      if (rules.length > 0) {
+        const observer = new MutationObserver(() => {
+          for (const rule of rules) {
+            const el = document.querySelector(rule.selector);
+            if (el && !el.style.filter) {
+              el.style.filter = `blur(${rule.blurPx}px)`;
+              el.style.pointerEvents = "none";
+              el.style.userSelect = "none";
+            }
+          }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+      }
+    } catch (error) {
+      console.error("Failed to apply persistent blurs:", error);
+    }
+  }
+
   createSidePanel() {
     this.sidePanel = document.createElement("div");
-    this.sidePanel.className = "element-delete-panel";
+    this.sidePanel.className = "pagesurgeon-panel";
     this.sidePanel.innerHTML = `
-      <div class="element-delete-panel__header">
-        <h3 class="element-delete-panel__title">Element Delete</h3>
+      <div class="pagesurgeon-panel__header">
+        <h3 class="pagesurgeon-panel__title">PageSurgeon</h3>
       </div>
-      <div class="element-delete-panel__body">
-        <div class="element-delete-panel__status">
-          <span class="element-delete-panel__status-text">Ready to select elements</span>
+      <div class="pagesurgeon-panel__body">
+        <div class="pagesurgeon-panel__status">
+          <span class="pagesurgeon-panel__status-text" id="panelStatus">Ready</span>
         </div>
-        <div class="element-delete-panel__actions">
-          <button class="element-delete-panel__button element-delete-panel__button--delete" id="deleteBtn" disabled>
-            🗑️ Delete Element
-          </button>
-          <button class="element-delete-panel__button element-delete-panel__button--undo" id="undoBtn" disabled>
-            ↩️ Undo
-          </button>
-          <button class="element-delete-panel__button element-delete-panel__button--cancel" id="cancelBtn">
-            ❌ Cancel
-          </button>
-        </div>
-        <div class="element-delete-panel__info">
-          Hover to highlight, click to select.
-        </div>
+        <div class="pagesurgeon-panel__actions" id="panelActions"></div>
       </div>
     `;
     document.body.appendChild(this.sidePanel);
-
-    this.sidePanel
-      .querySelector("#deleteBtn")
-      .addEventListener("click", () => this.deleteSelectedElement());
-    this.sidePanel
-      .querySelector("#undoBtn")
-      .addEventListener("click", () => this.undoLastDeletion());
-    this.sidePanel
-      .querySelector("#cancelBtn")
-      .addEventListener("click", () => this.deactivate());
   }
 
-  /**
-   * Bind events for communication.
-   */
   bindEvents() {
     window.addEventListener("message", (event) => {
-      if (event.data.type === "ELEMENT_DELETE_TOGGLE") {
-        this.toggle();
+      if (event.data.type === "PAGESURGEON_TOGGLE") {
+        this.isActive ? this.deactivate() : this.activate();
       }
     });
 
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-      if (request.type === "TOGGLE_ELEMENT_SELECTION") {
-        this.toggle();
-        sendResponse({ success: true });
-      } else if (request.type === "GET_STATUS") {
-        sendResponse({ isActive: this.isActive });
+      switch (request.type) {
+        case "SET_MODE":
+          this.setMode(request.mode);
+          sendResponse({ success: true });
+          break;
+        case "ACTIVATE":
+          this.activate();
+          sendResponse({ success: true });
+          break;
+        case "DEACTIVATE":
+          this.deactivate();
+          sendResponse({ success: true });
+          break;
+        case "GET_STATUS":
+          sendResponse({
+            isActive: this.isActive,
+            mode: this.currentModeName,
+          });
+          break;
       }
-      return true; // Indicates an async response
+      return true;
     });
   }
 
-  /**
-   * Handle keyboard shortcuts for delete, undo, and escape.
-   * @param {KeyboardEvent} event
-   */
-  handleKeyDown(event) {
-    if (!this.isActive) return;
-
-    if (event.key === "Delete" && this.selectedElement) {
-      event.preventDefault();
-      this.deleteSelectedElement();
-    } else if (
-      (event.ctrlKey || event.metaKey) &&
-      (event.key === "z" || event.key === "Z")
-    ) {
-      event.preventDefault();
-      this.undoLastDeletion();
-    } else if (event.key === "Escape") {
-      event.preventDefault();
-      this.deactivate();
+  setMode(modeName) {
+    if (this.currentMode && this.isActive) {
+      this.currentMode.deactivate();
+    }
+    this.currentModeName = modeName;
+    this.currentMode = this.modes[modeName];
+    this.clearSelection();
+    if (this.isActive) {
+      this.currentMode.activate(this);
     }
   }
 
-  /**
-   * Toggle the extension's active state.
-   */
-  toggle() {
-    this.isActive ? this.deactivate() : this.activate();
-  }
-
-  /**
-   * Activate element selection mode.
-   */
   activate() {
     if (this.isActive) return;
     this.isActive = true;
-    this.sidePanel.classList.add("element-delete-panel--visible");
+    this.currentMode = this.modes[this.currentModeName];
+    this.sidePanel.classList.add("pagesurgeon-panel--visible");
     this.enableElementSelection();
-    this.updateStatus("Select an element to delete");
-    console.log("Element selection mode activated.");
+    this.currentMode.activate(this);
   }
 
-  /**
-   * Deactivate element selection mode.
-   */
   deactivate() {
     if (!this.isActive) return;
     this.isActive = false;
-    this.sidePanel.classList.remove("element-delete-panel--visible");
+    this.sidePanel.classList.remove("pagesurgeon-panel--visible");
     this.disableElementSelection();
     this.clearSelection();
-    console.log("Element selection mode deactivated.");
+    if (this.currentMode) {
+      this.currentMode.deactivate();
+    }
   }
 
-  /**
-   * Add document-level event listeners for selection.
-   */
   enableElementSelection() {
-    document.body.classList.add("element-delete-cursor");
+    document.body.classList.add("pagesurgeon-cursor");
     document.addEventListener("mousemove", this.handleMouseMove);
-    document.addEventListener("click", this.handleElementClick, true); // Use capture phase
+    document.addEventListener("click", this.handleElementClick, true);
     document.addEventListener("keydown", this.handleKeyDown);
   }
 
-  /**
-   * Remove document-level event listeners.
-   */
   disableElementSelection() {
-    document.body.classList.remove("element-delete-cursor");
+    document.body.classList.remove("pagesurgeon-cursor");
     document.removeEventListener("mousemove", this.handleMouseMove);
     document.removeEventListener("click", this.handleElementClick, true);
     document.removeEventListener("keydown", this.handleKeyDown);
   }
 
-  /**
-   * Check if an element is part of the extension's UI.
-   * @param {HTMLElement} element
-   * @returns {boolean}
-   */
-  isExtensionElement(element) {
-    return (
-      element &&
-      (!!element.closest(".element-delete-panel") ||
-        element.classList.contains("element-delete-highlight"))
-    );
-  }
-
-  /**
-   * Handle mouse movement to highlight elements.
-   * @param {MouseEvent} event
-   */
   handleMouseMove(event) {
     if (!this.isActive) return;
-
-    const targetElement = event.target;
-
-    if (
-      !targetElement ||
-      this.isExtensionElement(targetElement) ||
-      targetElement === this.hoveredElement
-    ) {
-      return;
+    if (this.selectedElement) return;
+    const target = event.target;
+    if (!target || DomUtils.isExtensionElement(target) || target === this.hoveredElement) return;
+    this.hoveredElement = target;
+    if (this.currentMode) {
+      this.currentMode.onHover(target);
     }
-
-    this.hoveredElement = targetElement;
-    this.highlightElement(targetElement);
   }
 
-  /**
-   * Handle clicks to select an element.
-   * @param {MouseEvent} event
-   */
   handleElementClick(event) {
     if (!this.isActive) return;
-
-    if (this.isExtensionElement(event.target)) {
-      return;
-    }
-
+    if (DomUtils.isExtensionElement(event.target)) return;
     event.preventDefault();
     event.stopPropagation();
-
-    if (this.hoveredElement) {
-      this.selectElement(this.hoveredElement);
+    if (this.currentMode && this.hoveredElement) {
+      this.currentMode.onSelect(this.hoveredElement);
     }
   }
 
-  /**
-   * Draw a highlight box around the given element.
-   * @param {HTMLElement} element
-   */
-  highlightElement(element) {
+  handleKeyDown(event) {
+    if (!this.isActive) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      if (this.currentMode) {
+        this.currentMode.onEscape();
+      }
+    } else if (event.key === "Delete" && this.currentModeName === "delete") {
+      event.preventDefault();
+      this.currentMode.onAction();
+    } else if ((event.ctrlKey || event.metaKey) && event.key === "z" && this.currentModeName === "delete") {
+      event.preventDefault();
+      this.currentMode.onUndo();
+    } else if (event.key === "Enter" && this.currentModeName === "edit") {
+      this.currentMode.onAction();
+    }
+  }
+
+  showHighlight(element) {
     if (!this.highlightBox) {
       this.highlightBox = document.createElement("div");
-      this.highlightBox.className = "element-delete-highlight";
+      this.highlightBox.className = "pagesurgeon-highlight";
       document.body.appendChild(this.highlightBox);
     }
-
     const rect = element.getBoundingClientRect();
     this.highlightBox.style.left = `${rect.left + window.scrollX}px`;
     this.highlightBox.style.top = `${rect.top + window.scrollY}px`;
     this.highlightBox.style.width = `${rect.width}px`;
     this.highlightBox.style.height = `${rect.height}px`;
-
-    // Ensure it's not styled as selected unless it is
     if (element !== this.selectedElement) {
-      this.highlightBox.classList.remove("element-delete-highlight--selected");
+      this.highlightBox.classList.remove("pagesurgeon-highlight--selected");
     }
   }
 
-  /**
-   * Select an element for deletion.
-   * @param {HTMLElement} element
-   */
-  selectElement(element) {
-    this.selectedElement = element;
+  hideHighlight() {
     if (this.highlightBox) {
-      this.highlightBox.classList.add("element-delete-highlight--selected");
+      this.highlightBox.style.display = "none";
     }
-    this.updateStatus(`Selected: &lt;${element.tagName.toLowerCase()}&gt;`);
-    this.updateButtonStates();
-    console.log("Element selected:", element);
   }
 
-  /**
-   * Clear the current selection.
-   */
+  highlightAsSelected() {
+    if (this.highlightBox) {
+      this.highlightBox.classList.add("pagesurgeon-highlight--selected");
+    }
+  }
+
   clearSelection() {
     this.selectedElement = null;
     this.hoveredElement = null;
@@ -274,85 +238,37 @@ class ElementDeleteExtension {
       this.highlightBox.remove();
       this.highlightBox = null;
     }
-    this.updateStatus("Select an element to delete");
-    this.updateButtonStates();
   }
 
-  /**
-   * Delete the currently selected element.
-   */
-  deleteSelectedElement() {
-    if (!this.selectedElement) return;
-
-    const deletedInfo = {
-      element: this.selectedElement,
-      parent: this.selectedElement.parentNode,
-      nextSibling: this.selectedElement.nextSibling,
-    };
-
-    this.selectedElement.remove();
-    this.deletedElements.push(deletedInfo);
-    console.log("Element deleted:", deletedInfo.element);
-
-    this.clearSelection();
-    this.updateStatus("Element deleted");
-  }
-
-  /**
-   * Restore the last deleted element.
-   */
-  undoLastDeletion() {
-    if (this.deletedElements.length === 0) return;
-
-    const lastDeleted = this.deletedElements.pop();
-    if (lastDeleted.nextSibling) {
-      lastDeleted.parent.insertBefore(
-        lastDeleted.element,
-        lastDeleted.nextSibling
-      );
-    } else {
-      lastDeleted.parent.appendChild(lastDeleted.element);
+  updatePanelContent(html) {
+    const actions = document.getElementById("panelActions");
+    if (actions) {
+      actions.innerHTML = html;
     }
-    console.log("Element restored:", lastDeleted.element);
-    this.updateStatus("Element restored");
-    this.updateButtonStates();
-  }
-
-  /**
-   * Update the status text in the side panel.
-   * @param {string} text
-   */
-  updateStatus(text) {
-    const statusElement = this.sidePanel.querySelector(
-      ".element-delete-panel__status-text"
-    );
-    if (statusElement) {
-      statusElement.innerHTML = text;
+    const cancelBtn = document.getElementById("modeCancelBtn");
+    if (cancelBtn) {
+      cancelBtn.addEventListener("click", () => this.deactivate());
     }
-  }
-
-  /**
-   * Enable/disable side panel buttons based on state.
-   */
-  updateButtonStates() {
-    const deleteBtn = this.sidePanel.querySelector("#deleteBtn");
-    const undoBtn = this.sidePanel.querySelector("#undoBtn");
-
-    if (deleteBtn) {
-      deleteBtn.disabled = !this.selectedElement;
+    const actionBtn = document.getElementById("modeActionBtn");
+    if (actionBtn && this.currentModeName !== "edit") {
+      actionBtn.addEventListener("click", () => this.currentMode.onAction());
     }
+    const undoBtn = document.getElementById("modeUndoBtn");
     if (undoBtn) {
-      undoBtn.disabled = this.deletedElements.length === 0;
+      undoBtn.addEventListener("click", () => this.currentMode.onUndo());
+    }
+  }
+
+  updateStatus(text) {
+    const statusEl = document.getElementById("panelStatus");
+    if (statusEl) {
+      statusEl.innerHTML = text;
     }
   }
 }
 
-// Initialize the extension
 if (document.readyState === "loading") {
-  document.addEventListener(
-    "DOMContentLoaded",
-    () => new ElementDeleteExtension()
-  );
+  document.addEventListener("DOMContentLoaded", () => new ModeController());
 } else {
-  new ElementDeleteExtension();
+  new ModeController();
 }

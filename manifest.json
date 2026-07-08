@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Element Delete",
-  "version": "0.0.1",
-  "description": "Visually delete elements from any webpage with a clean, intuitive interface",
-  "permissions": ["activeTab", "scripting"],
+  "name": "PageSurgeon",
+  "version": "0.2.0",
+  "description": "Surgically edit, delete, blur, and screenshot any element on a webpage",
+  "permissions": ["activeTab", "scripting", "storage", "downloads"],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "scripts/background.js"
@@ -11,14 +11,21 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-        "js": ["scripts/content.js"],
+        "js": [
+          "scripts/utils/dom-utils.js",
+          "scripts/modes/delete-mode.js",
+          "scripts/modes/edit-mode.js",
+          "scripts/modes/screenshot-mode.js",
+          "scripts/modes/blur-mode.js",
+          "scripts/content.js"
+        ],
       "css": ["styles/panel.css"],
       "run_at": "document_end"
     }
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Element Delete"
+    "default_title": "PageSurgeon"
   },
   "icons": {
     "16": "icons/icon16.png",

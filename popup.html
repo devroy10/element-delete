@@ -4,15 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Element Delete</title>
+    <title>PageSurgeon</title>
     <link rel="stylesheet" href="./styles/popup.css">
 </head>
 
 <body>
     <div class="popup">
         <header class="popup__header">
-            <h1 class="popup__title">Element Delete</h1>
-            <p class="popup__subtitle">Visual element deletion tool</p>
+            <h1 class="popup__title">PageSurgeon</h1>
+            <p class="popup__subtitle">Surgical page editing</p>
         </header>
 
         <main class="popup__main">
@@ -21,9 +21,28 @@
                 <span class="popup__status-value" id="statusValue">Inactive</span>
             </div>
 
+            <div class="popup__mode-selector">
+                <label class="popup__mode-option">
+                    <input type="radio" name="mode" value="delete" checked>
+                    <span class="popup__mode-label">🗑️ Delete</span>
+                </label>
+                <label class="popup__mode-option">
+                    <input type="radio" name="mode" value="edit">
+                    <span class="popup__mode-label">✏️ Edit Text</span>
+                </label>
+                <label class="popup__mode-option">
+                    <input type="radio" name="mode" value="screenshot">
+                    <span class="popup__mode-label">📷 Screenshot</span>
+                </label>
+                <label class="popup__mode-option">
+                    <input type="radio" name="mode" value="blur">
+                    <span class="popup__mode-label">🔵 Blur</span>
+                </label>
+            </div>
+
             <div class="popup__actions">
-                <button class="popup__button popup__button--primary" id="toggleButton">
-                    Activate Element Selection
+                <button class="popup__button popup__button--primary" id="activateButton">
+                    Activate Delete
                 </button>
                 <button class="popup__button popup__button--secondary" id="helpButton">
                     Help
@@ -32,17 +51,17 @@
 
             <div class="popup__info">
                 <h3>How to use:</h3>
-                <ol class="popup__steps">
-                    <li>Click "Activate Element Selection"</li>
-                    <li>Hover over elements to highlight them</li>
-                    <li>Click to select an element</li>
-                    <li>Use the side panel to delete or undo</li>
+                <ol class="popup__steps" id="helpSteps">
+                    <li>Select a mode above</li>
+                    <li>Click "Activate" to start</li>
+                    <li>Hover to highlight, click to act</li>
+                    <li>Use side panel for more options</li>
                 </ol>
             </div>
         </main>
 
         <footer class="popup__footer">
-            <p class="popup__version">v0.0.1</p>
+            <p class="popup__version">v0.2.0</p>
         </footer>
     </div>
 

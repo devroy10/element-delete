@@ -1,143 +1,40 @@
-# Cursor Rules for Element Delete Chrome Extension
+# Cursor Rules for PageSurgeon Chrome Extension
 
 ## Project Overview
 
-This is a Chrome Extension project that allows users to visually delete elements from webpages. The extension uses Manifest V3 and provides a clean, intuitive interface for element selection and deletion.
+A Chrome Extension (MV3) for surgical page editing — delete, edit text, screenshot, and blur any element on any webpage.
 
 ## Code Style & Standards
 
 ### JavaScript
 
 - Use ES6+ features (const/let, arrow functions, template literals)
-- Follow camelCase naming convention for variables and functions
-- Use descriptive names that clearly indicate purpose
-- Add JSDoc comments for all public functions and classes
-- Implement proper error handling with try-catch blocks
+- Use camelCase naming
+- Use descriptive names
+- Implement proper error handling with try-catch
 - Use async/await for asynchronous operations
 
 ### CSS
 
-- Use CSS custom properties (variables) for consistent theming
-- Implement BEM methodology for class naming
+- Use CSS custom properties for consistent theming
+- Use BEM methodology for class naming with `pagesurgeon-` prefix
 - Use flexbox and grid for layouts
-- Ensure all interactive elements have hover/focus states
-- Implement smooth transitions for better UX
-- Use CSS-in-JS or scoped styles to prevent conflicts
+- Implement smooth transitions
 
-### HTML
+## Architecture
 
-- Use semantic HTML elements
-- Include proper ARIA labels for accessibility
-- Keep markup clean and minimal
-- Use data attributes for JavaScript hooks
+### Mode Architecture
 
-## Architecture Principles
+The extension uses a ModeController + pluggable mode classes:
 
-### Separation of Concerns
+- `ModeController` (content.js) — shared infrastructure (highlight, events, panel)
+- `DeleteMode` — delete/undo
+- `EditMode` — inline text editing
+- `ScreenshotMode` — element capture via `captureVisibleTab`
+- `BlurMode` — blur + chrome.storage persistence
 
-- **ElementSelector**: Handle element detection, highlighting, and selection
-- **SidePanel**: Manage the control panel UI and user interactions
-- **ElementManager**: Handle DOM manipulation, deletion, and undo operations
-- **EventManager**: Coordinate messaging between components
-- **StateManager**: Track extension state and user selections
+### Messaging
 
-### Modularity
-
-- Each component should be self-contained with clear interfaces
-- Use event-driven architecture for component communication
-- Implement dependency injection where appropriate
-- Keep functions small and focused on single responsibilities
-
-### Performance
-
-- Use event delegation for dynamic elements
-- Implement debouncing for mouse move events
-- Cache DOM queries where possible
-- Clean up event listeners and timers on deactivation
-- Use requestAnimationFrame for smooth animations
-
-## Chrome Extension Specific Rules
-
-### Manifest V3 Compliance
-
-- Use service workers instead of background pages
-- Implement proper permission handling
-- Use content scripts for webpage injection
-- Follow security best practices
-
-### Content Script Isolation
-
-- Use shadow DOM for UI components to prevent style conflicts
-- Implement proper message passing between content script and background
-- Handle webpage context changes gracefully
-- Avoid global variable pollution
-
-### User Experience
-
-- Provide immediate visual feedback for all actions
-- Implement smooth transitions and animations
-- Ensure the extension doesn't interfere with normal webpage functionality
-- Provide clear error messages and recovery options
-
-## File Organization
-
-### Core Files
-
-- `manifest.json`: Extension configuration
-- `background.js`: Service worker for background tasks
-- `content.js`: Main content script with all functionality
-- `panel.css`: Styles for the side panel and visual indicators
-
-### Supporting Files
-
-- `popup.html/js`: Extension popup interface
-- `icons/`: Extension icons in multiple sizes
-- `README.md`: Project documentation and setup instructions
-
-## Testing & Quality
-
-### Code Quality
-
-- Write self-documenting code with clear variable names
-- Implement proper error boundaries and fallbacks
-- Add console logging for debugging (remove in production)
-- Use TypeScript-like JSDoc for type safety
-
-### Browser Compatibility
-
-- Test on multiple Chrome versions
-- Ensure functionality works on various website types
-- Handle edge cases gracefully (empty pages, iframes, etc.)
-- Implement progressive enhancement
-
-## Security Considerations
-
-### Content Security
-
-- Validate all user inputs and DOM manipulations
-- Use safe DOM methods to prevent XSS
-- Implement proper sanitization for any user-generated content
-- Follow Chrome extension security best practices
-
-### Data Handling
-
-- Minimize data collection and storage
-- Implement proper cleanup on extension deactivation
-- Use secure storage methods for any persistent data
-- Handle sensitive webpage content appropriately
-
-## Documentation Requirements
-
-### Code Comments
-
-- Document all public APIs and interfaces
-- Explain complex algorithms and business logic
-- Include usage examples for reusable components
-- Document any browser-specific workarounds
-
-### User Documentation
-
-- Provide clear setup and installation instructions
-- Include troubleshooting guides for common issues
-- Document keyboard shortcuts and accessibility features
-- Explain any limitations or known issues
+- Popup ↔ Content: `chrome.tabs.sendMessage` (SET_MODE, ACTIVATE, DEACTIVATE, GET_STATUS)
+- Background ↔ Content: `window.postMessage` (PAGESURGEON_TOGGLE)
+- Content → Background: `chrome.runtime.sendMessage` (CAPTURE_ELEMENT)
