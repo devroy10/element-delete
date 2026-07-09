@@ -10,6 +10,7 @@ class PopupManager {
 
     this.isActive = false;
     this.currentMode = "delete";
+    this.contentScriptAvailable = true;
     this.init();
   }
 
@@ -24,6 +25,22 @@ class PopupManager {
   init() {
     this.bindEvents();
     this.checkExtensionStatus();
+  }
+
+  showNoConnection() {
+    this.contentScriptAvailable = false;
+    document.getElementById("refreshNotice").hidden = false;
+    document.getElementById("refreshLink").addEventListener("click", (e) => {
+      e.preventDefault();
+      chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+        if (tab) chrome.tabs.reload(tab.id);
+      });
+    });
+    this.elements.activateButton.disabled = true;
+    this.elements.modeInputs.forEach((input) => (input.disabled = true));
+    this.elements.statusValue.textContent = "Unavailable";
+    this.elements.statusValue.className =
+      "popup__status-value popup__status-value--inactive";
   }
 
   bindEvents() {
@@ -48,22 +65,23 @@ class PopupManager {
   }
 
   async checkExtensionStatus() {
-    try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tab) {
-        const response = await this.sendMessage(tab.id, { type: "GET_STATUS" });
-        if (response) {
-          this.isActive = response.isActive;
-          this.currentMode = response.mode || "delete";
-          this.syncUI();
-        }
-      }
-    } catch {
-      // content script not available
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab) return;
+
+    const response = await this.sendMessage(tab.id, { type: "GET_STATUS" });
+    if (response) {
+      this.contentScriptAvailable = true;
+      this.isActive = response.isActive;
+      this.currentMode = response.mode || "delete";
+    } else {
+      this.showNoConnection();
     }
+    this.syncUI();
   }
 
   async toggleMode() {
+    if (!this.contentScriptAvailable) return;
+
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab) return;
 
