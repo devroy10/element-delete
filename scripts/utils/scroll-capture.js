@@ -5,7 +5,6 @@ function hideOverlays(targetElement) {
     return (
       el === targetElement ||
       el.contains(targetElement) ||
-      targetElement.contains(el) ||
       el.closest(".pagesurgeon-panel") ||
       el.offsetWidth === 0
     );
@@ -17,16 +16,19 @@ function hideOverlays(targetElement) {
     if (shouldSkip(el)) continue;
 
     const pos = window.getComputedStyle(el).position;
-    if (pos === "fixed") {
-      const prev = el.style.display;
-      el.style.display = "none";
-      hidden.push({ el, restore: () => { el.style.display = prev; } });
-    } else if (pos === "sticky") {
+    const isSticky = pos === "sticky" || pos === "-webkit-sticky";
+    if (pos === "fixed" || isSticky) {
+      const prevDisplay = el.style.display;
       const prevVis = el.style.visibility;
       const prevPos = el.style.position;
-      el.style.visibility = "hidden";
-      el.style.position = "static";
-      hidden.push({ el, restore: () => {
+      if (pos === "fixed") {
+        el.style.display = "none";
+      } else {
+        el.style.visibility = "hidden";
+        el.style.position = "static";
+      }
+      hidden.push({ restore: () => {
+        el.style.display = prevDisplay;
         el.style.visibility = prevVis;
         el.style.position = prevPos;
       } });
