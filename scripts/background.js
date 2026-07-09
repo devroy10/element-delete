@@ -32,6 +32,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       });
     return true;
   }
+
+  if (request.type === "CAPTURE_TILE" && sender.tab) {
+    captureTile(sender.tab.windowId, request.dpr || 1)
+      .then((dataUrl) => sendResponse({ dataUrl }))
+      .catch((err) => {
+        console.error("Tile capture failed:", err);
+        sendResponse({ error: err.message });
+      });
+    return true;
+  }
+
+  if (request.type === "DOWNLOAD_BLOB") {
+    chrome.downloads.download({
+      url: request.url,
+      filename: request.filename || `pagesurgeon-${Date.now()}.png`,
+      saveAs: false,
+    });
+    sendResponse({ success: true });
+  }
 });
 
 async function captureElement(windowId, rect, dpr) {
@@ -49,13 +68,29 @@ async function captureElement(windowId, rect, dpr) {
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
 
-  const croppedBlob = await canvas.convertToBlob({
-    type: "image/png",
-  });
+  const croppedBlob = await canvas.convertToBlob({ type: "image/png" });
+  return blobToDataUrl(croppedBlob);
+}
+
+async function captureTile(windowId, dpr) {
+  const dataUrl = await chrome.tabs.captureVisibleTab(windowId, { format: "png" });
+  const blob = await (await fetch(dataUrl)).blob();
+  const img = await createImageBitmap(blob);
+
+  const canvas = new OffscreenCanvas(img.width, img.height);
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(img, 0, 0);
+
+  const croppedBlob = await canvas.convertToBlob({ type: "image/png" });
+  return blobToDataUrl(croppedBlob);
+}
+
+async function blobToDataUrl(blob) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
     reader.onerror = reject;
-    reader.readAsDataURL(croppedBlob);
+    reader.readAsDataURL(blob);
   });
 }

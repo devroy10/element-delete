@@ -13,6 +13,8 @@
       "matches": ["<all_urls>"],
         "js": [
           "scripts/utils/dom-utils.js",
+          "scripts/utils/stitcher.js",
+          "scripts/utils/scroll-capture.js",
           "scripts/modes/delete-mode.js",
           "scripts/modes/edit-mode.js",
           "scripts/modes/screenshot-mode.js",
