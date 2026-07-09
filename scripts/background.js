@@ -38,17 +38,20 @@ async function captureElement(windowId, rect, dpr) {
   const dataUrl = await chrome.tabs.captureVisibleTab(windowId, { format: "png" });
   const blob = await (await fetch(dataUrl)).blob();
   const img = await createImageBitmap(blob);
-  const canvas = new OffscreenCanvas(rect.width * dpr, rect.height * dpr);
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(
-    img,
-    rect.left * dpr, rect.top * dpr,
-    rect.width * dpr, rect.height * dpr,
-    0, 0,
-    rect.width * dpr, rect.height * dpr
-  );
 
-  const croppedBlob = await canvas.convertToBlob({ type: "image/png" });
+  const sx = Math.round(rect.left * dpr);
+  const sy = Math.round(rect.top * dpr);
+  const sw = Math.round(rect.width * dpr);
+  const sh = Math.round(rect.height * dpr);
+
+  const canvas = new OffscreenCanvas(sw, sh);
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+
+  const croppedBlob = await canvas.convertToBlob({
+    type: "image/png",
+  });
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);

@@ -53,10 +53,10 @@ class ScreenshotMode {
       const result = await chrome.runtime.sendMessage({
         type: "CAPTURE_ELEMENT",
         rect: {
-          left: Math.round(rect.left),
-          top: Math.round(rect.top),
-          width: Math.round(rect.width),
-          height: Math.round(rect.height),
+          left: rect.left,
+          top: rect.top,
+          width: rect.width,
+          height: rect.height,
         },
         dpr: dpr,
         filename: `pagesurgeon-${Date.now()}.png`,
