@@ -74,3 +74,27 @@ pagesurgeon/
 - **Native APIs**: `chrome.tabs.captureVisibleTab` for screenshots, `chrome.storage.local` for blur persistence, `chrome.downloads` for file saving
 - **Mode Architecture**: Shared hover/select infrastructure with pluggable mode classes
 - **No Dependencies**: Zero external libraries — all native browser APIs
+
+## Roadmap
+
+### Completed
+
+- [x] **Scroll-and-stitch full-element screenshots** — Capture elements larger than the viewport by scrolling and stitching tiles
+- [x] **Batch blur** — Select multiple elements and apply blur to all at once
+- [x] **Multi-select blur workflow** — Click elements to preview blur, batch save with one click
+- [x] **Edit Text mode** — Inline contenteditable editing with Enter/Escape/click-away
+- [x] **Screenshot mode** — Viewport and scroll-capture element screenshots
+- [x] **Blur mode** — Persistent blur across page reloads via chrome.storage + MutationObserver
+- [x] **Delete mode** — Element deletion with undo stack
+- [x] **Scroll-capture overlay suppression** — Fixed/sticky handled per-tile to prevent rendering issues in stitched screenshots
+
+### Planned
+
+- [ ] **Manage Blurs UI** — Popup page listing saved blur rules with remove/toggle
+- [ ] **Blur intensity slider** — Adjustable blur strength (4px / 8px / 16px / 32px)
+- [ ] **Undo blur** — Per-rule removal and reversal
+- [ ] **Blur rule sharing** — Export/import rules as JSON
+- [ ] **Element picker** — DevTools-style CSS selector input for direct element targeting
+- [ ] **Custom CSS injection** — Beyond blur: hide, highlight, outline elements
+- [ ] **History panel** — Full session log of all modifications (delete, edit, blur)
+- [ ] **Blur rule toggle** — Enable/disable individual rules without removing them

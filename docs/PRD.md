@@ -172,7 +172,7 @@ class EditTextMode {
 ### 3.6 Edge Cases
 
 - **Empty elements**: Allow editing, add placeholder text
-- **Nested elements** (`<p>Hello <strong>world</strong></p>`): Edit as HTML (advanced) or flatten to text (v1). Start with flattening — replace innerHTML with plain text on edit start.
+- **Nested elements** (`<p>Hello <strong>world</strong></p>`): Edit as HTML (advanced) or flatten to text. Currently flattens to plain text on edit start.
 - **iframe content**: Not supported in v1
 - **SVG/foreignObject**: Not supported in v1
 - **Max length**: No enforced limit
@@ -224,8 +224,8 @@ Uses the **native Chrome `chrome.tabs.captureVisibleTab`** API + canvas cropping
 
 ### 4.5 Edge Cases
 
-- **Element larger than viewport**: Capture what's visible, note the limitation in the panel. Future: scroll-and-stitch.
-- **Fixed/sticky elements**: May overlap the captured area. Acceptable in v1.
+- **Element larger than viewport**: Captured via scroll-and-stitch (implemented).
+- **Fixed/sticky elements**: Handled via per-tile fixed→absolute conversion during scroll-capture.
 - **Element hidden/offscreen**: Detect via `offsetParent === null` or rect not in viewport. Show warning in panel.
 - **Canvas/WebGL content**: Captured as raster (correct). No SVG vector capture in v1.
 - **High-DPI / devicePixelRatio**: Account for `devicePixelRatio` when cropping — multiply rect coords.
@@ -270,7 +270,7 @@ function generateSelector(element) {
 }
 ```
 
-For v1, use **CSS selector path** with preference for `id` and `[data-testid]` / `[aria-label]`. Store as `chrome.storage.local`:
+The implementation uses **CSS selector path** with preference for `id` and `[data-testid]` / `[aria-label]`. Store as `chrome.storage.local`:
 
 ```json
 {
@@ -474,11 +474,6 @@ Blur intensity: [====o====] 8px
 
 ---
 
-## 9. Future (Post-v2)
+## 9. Roadmap
 
-- **Full-page screenshot** with scroll-and-stitch
-- **Blur rule sharing** export/import as JSON
-- **Batch blur** — blur multiple elements in one action
-- **Element picker** — direct DevTools-style element selector input
-- **Custom CSS injection** beyond blur (hide, highlight, outline)
-- **History panel** — full session log of all modifications
+See [README.md#roadmap](../README.md#roadmap) for the current roadmap with completed items checked off.
