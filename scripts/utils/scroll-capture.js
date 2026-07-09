@@ -70,6 +70,13 @@ function preparePageForCapture(targetElement, container) {
       restoreFns.push(saveAndSet(el, "backgroundAttachment", "scroll"));
     }
 
+    const pos = style.position;
+    if (pos === "absolute") {
+      restoreFns.push(saveAndSet(el, "position", "relative"));
+    } else if (pos === "fixed") {
+      restoreFns.push(saveAndSet(el, "position", "absolute"));
+    }
+
     el = el.parentElement;
   }
 
