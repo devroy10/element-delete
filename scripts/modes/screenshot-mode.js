@@ -109,12 +109,21 @@ class ScreenshotMode {
     const stitcher = new Stitcher(elemW * dpr, elemH * dpr);
     const restorePage = preparePageForCapture(el, container);
 
+    let tileIndex = 0;
     let tile;
     while ((tile = scroller.next())) {
-      await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 80)));
+      const isFirstTile = tileIndex === 0;
+      const delay = isFirstTile ? 300 : 80;
+
+      updateFixedForTile(container, vw, vh, tile.x, tile.y, isFirstTile);
+
+      await new Promise((r) => requestAnimationFrame(() => setTimeout(r, delay)));
 
       const result = await chrome.runtime.sendMessage({ type: "CAPTURE_TILE", dpr });
-      if (!result || !result.dataUrl) continue;
+      if (!result || !result.dataUrl) {
+        restoreFixedForTile();
+        continue;
+      }
 
       const blob = await (await fetch(result.dataUrl)).blob();
       const img = await createImageBitmap(blob);
@@ -139,6 +148,9 @@ class ScreenshotMode {
 
         stitcher.blit(img, srcX, srcY, srcW, srcH, destX, destY);
       }
+
+      restoreFixedForTile();
+      tileIndex++;
     }
 
     scroller.restore();
