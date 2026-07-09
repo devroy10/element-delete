@@ -166,9 +166,9 @@ class ModeController {
 
   handleMouseMove(event) {
     if (!this.isActive) return;
-    if (this.selectedElement) return;
     const target = event.target;
     if (!target || DomUtils.isExtensionElement(target) || target === this.hoveredElement) return;
+    if (this.selectedElement && this.currentModeName !== "blur") return;
     this.hoveredElement = target;
     if (this.currentMode) {
       this.currentMode.onHover(target);
@@ -177,11 +177,13 @@ class ModeController {
 
   handleElementClick(event) {
     if (!this.isActive) return;
-    if (DomUtils.isExtensionElement(event.target)) return;
+    const target = event.target;
+    if (!target || DomUtils.isExtensionElement(target)) return;
     event.preventDefault();
     event.stopPropagation();
-    if (this.currentMode && this.hoveredElement) {
-      this.currentMode.onSelect(this.hoveredElement);
+    if (this.currentMode) {
+      this.hoveredElement = target;
+      this.currentMode.onSelect(target);
     }
   }
 

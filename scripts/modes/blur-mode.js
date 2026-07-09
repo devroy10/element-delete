@@ -1,11 +1,17 @@
 class BlurMode {
+  constructor() {
+    this._previewQueue = [];
+  }
+
   activate(controller) {
     this.controller = controller;
+    this._previewQueue = [];
     controller.updatePanelContent(this.getPanelHTML());
-    controller.updateStatus("Select an element to blur");
+    controller.updateStatus("Select elements to blur");
   }
 
   deactivate() {
+    this.clearAllPreviews();
     this.controller = null;
   }
 
@@ -14,62 +20,70 @@ class BlurMode {
   }
 
   onSelect(element) {
+    if (this._previewQueue.includes(element)) {
+      this.controller.selectedElement = element;
+      this.controller.highlightAsSelected();
+      return;
+    }
+
+    this._previewQueue.push(element);
+    element.style.filter = "blur(8px)";
+    element.style.transition = "filter 0.3s ease";
+
     this.controller.selectedElement = element;
     this.controller.highlightAsSelected();
-    this.controller.updateStatus(`Selected: <span style="color:var(--accent-primary)">${element.tagName.toLowerCase()}</span>`);
-    this.previewBlur(element);
+    this.controller.updateStatus(
+      `${this._previewQueue.length} element${this._previewQueue.length > 1 ? "s" : ""} blurred`
+    );
     this.updateButtons();
   }
 
   onAction() {
-    this.saveBlur();
+    this.saveBlurs();
   }
 
   onEscape() {
-    this.removePreviewBlur();
+    this.clearAllPreviews();
     this.controller.clearSelection();
     this.updateButtons();
   }
 
-  previewBlur(element) {
-    this._previewEl = element;
-    element.style.filter = "blur(8px)";
-    element.style.transition = "filter 0.3s ease";
-  }
-
-  removePreviewBlur() {
-    if (this._previewEl) {
-      this._previewEl.style.filter = "";
-      this._previewEl.style.transition = "";
-      this._previewEl = null;
+  clearAllPreviews() {
+    for (const el of this._previewQueue) {
+      el.style.filter = "";
+      el.style.transition = "";
     }
+    this._previewQueue = [];
   }
 
-  async saveBlur() {
-    const el = this.controller.selectedElement;
-    if (!el) return;
-
-    const selector = this.generateSelector(el);
-    const rule = {
-      id: crypto.randomUUID(),
-      urlPattern: location.hostname + "/*",
-      selector: selector,
-      blurPx: 8,
-      createdAt: new Date().toISOString(),
-    };
+  async saveBlurs() {
+    if (!this._previewQueue.length) return;
 
     const { blurRules = [] } = await chrome.storage.local.get("blurRules");
-    blurRules.push(rule);
+
+    for (const el of this._previewQueue) {
+      const selector = this.generateSelector(el);
+      blurRules.push({
+        id: crypto.randomUUID(),
+        urlPattern: location.hostname + "/*",
+        selector: selector,
+        blurPx: 8,
+        createdAt: new Date().toISOString(),
+      });
+
+      el.style.filter = "blur(8px)";
+      el.style.pointerEvents = "none";
+      el.style.userSelect = "none";
+      el.style.transition = "";
+    }
+
     await chrome.storage.local.set({ blurRules });
 
-    el.style.filter = "blur(8px)";
-    el.style.pointerEvents = "none";
-    el.style.userSelect = "none";
-    el.style.transition = "";
-
-    this.controller.updateStatus(`Blur saved for ${location.hostname} ✓`);
+    this.controller.updateStatus(
+      `Saved ${this._previewQueue.length} blur${this._previewQueue.length > 1 ? "s" : ""} for ${location.hostname} ✓`
+    );
+    this._previewQueue = [];
     this.controller.clearSelection();
-    this._previewEl = null;
     this.updateButtons();
   }
 
@@ -108,19 +122,24 @@ class BlurMode {
   getPanelHTML() {
     return `
       <button class="pagesurgeon-panel__button pagesurgeon-panel__button--action" id="modeActionBtn" disabled>
-        🔵 Apply & Save Blur
+        🔵 Apply & Save Blurs
       </button>
       <button class="pagesurgeon-panel__button pagesurgeon-panel__button--cancel" id="modeCancelBtn">
         ❌ Cancel
       </button>
       <div class="pagesurgeon-panel__info">
-        Select an element, blur it, and save. It stays blurred on reload.
+        Click elements to blur them, then Apply & Save all at once.
       </div>
     `;
   }
 
   updateButtons() {
     const btn = document.getElementById("modeActionBtn");
-    if (btn) btn.disabled = !this.controller.selectedElement;
+    if (!btn) return;
+    const count = this._previewQueue.length;
+    btn.disabled = count === 0;
+    btn.textContent = count > 0
+      ? `🔵 Apply & Save Blurs (${count})`
+      : "🔵 Apply & Save Blurs";
   }
 }
