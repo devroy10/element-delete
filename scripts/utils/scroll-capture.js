@@ -1,41 +1,94 @@
-function hideOverlays(targetElement) {
-  const hidden = [];
+function preparePageForCapture(targetElement, container) {
+  const restoreFns = [];
 
-  function shouldSkip(el) {
-    return (
-      el === targetElement ||
-      el.contains(targetElement) ||
-      el.closest(".pagesurgeon-panel") ||
-      el.offsetWidth === 0
-    );
+  function saveAndSet(el, prop, value) {
+    const prev = el.style[prop];
+    el.style.setProperty(prop, value, "important");
+    return () => { el.style[prop] = prev; };
   }
+
+  const scrollbarStyle = document.createElement("style");
+  scrollbarStyle.textContent = [
+    `#${container.id || ""}::-webkit-scrollbar, html::-webkit-scrollbar { display: none !important; }`,
+    `*, *::before, *::after { transition: none !important; animation: none !important; }`,
+  ].join(" ");
+  document.head.appendChild(scrollbarStyle);
+  restoreFns.push(() => scrollbarStyle.remove());
 
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_ELEMENT, null);
   while (walker.nextNode()) {
     const el = walker.currentNode;
-    if (shouldSkip(el)) continue;
+    if (
+      el === targetElement ||
+      el.contains(targetElement) ||
+      el.closest(".pagesurgeon-panel") ||
+      el.offsetWidth === 0
+    ) continue;
 
     const pos = window.getComputedStyle(el).position;
-    const isSticky = pos === "sticky" || pos === "-webkit-sticky";
-    if (pos === "fixed" || isSticky) {
-      const prevDisplay = el.style.display;
-      const prevVis = el.style.visibility;
-      const prevPos = el.style.position;
-      if (pos === "fixed") {
-        el.style.display = "none";
-      } else {
-        el.style.visibility = "hidden";
-        el.style.position = "static";
-      }
-      hidden.push({ restore: () => {
-        el.style.display = prevDisplay;
-        el.style.visibility = prevVis;
-        el.style.position = prevPos;
-      } });
+    if (pos === "fixed") {
+      restoreFns.push(saveAndSet(el, "opacity", "0"));
+      restoreFns.push(saveAndSet(el, "animation", "unset"));
+      restoreFns.push(saveAndSet(el, "transitionDuration", "0s"));
+    } else if (pos === "sticky" || pos === "-webkit-sticky") {
+      restoreFns.push(saveAndSet(el, "position", "static"));
     }
   }
 
-  return () => { for (const h of hidden) h.restore(); };
+  let el = container.parentElement;
+  while (el && el !== document.documentElement.parentElement) {
+    const style = window.getComputedStyle(el);
+    const overflow = style.overflow + style.overflowY;
+
+    if (overflow.includes("auto") || overflow.includes("scroll") || overflow.includes("hidden") || overflow.includes("clip")) {
+      restoreFns.push(saveAndSet(el, "overflow", "visible"));
+      restoreFns.push(saveAndSet(el, "overflowX", "visible"));
+      restoreFns.push(saveAndSet(el, "overflowY", "visible"));
+    }
+
+    if (style.maxHeight !== "none") {
+      restoreFns.push(saveAndSet(el, "maxHeight", "none"));
+    }
+
+    const height = parseFloat(style.height);
+    if (style.height !== "auto" && !isNaN(height)) {
+      el.style.minHeight = style.height;
+      restoreFns.push(saveAndSet(el, "height", "auto"));
+    }
+
+    const parentDisplay = el.parentElement ? window.getComputedStyle(el.parentElement).display : "";
+    if (parentDisplay.includes("flex")) {
+      restoreFns.push(saveAndSet(el, "flexShrink", "0"));
+      if (style.flexBasis !== "auto") restoreFns.push(saveAndSet(el, "flexBasis", "auto"));
+      if (style.alignSelf === "stretch") restoreFns.push(saveAndSet(el, "alignSelf", "flex-start"));
+    }
+    if (parentDisplay.includes("grid") && style.alignSelf === "stretch") {
+      restoreFns.push(saveAndSet(el, "alignSelf", "start"));
+    }
+
+    if (style.backgroundAttachment === "fixed") {
+      restoreFns.push(saveAndSet(el, "backgroundAttachment", "scroll"));
+    }
+
+    el = el.parentElement;
+  }
+
+  const html = document.documentElement;
+  const htmlTag = html.tagName.toLowerCase();
+  restoreFns.push(saveAndSet(html, "height", "auto"));
+  restoreFns.push(saveAndSet(html, "minHeight", "100%"));
+  restoreFns.push(saveAndSet(html, "scrollBehavior", "unset"));
+
+  const body = document.body;
+  restoreFns.push(saveAndSet(body, "height", "auto"));
+  restoreFns.push(saveAndSet(body, "minHeight", "100%"));
+
+  if (container !== document.documentElement) {
+    restoreFns.push(saveAndSet(container, "overflow", "visible"));
+    restoreFns.push(saveAndSet(container, "scrollBehavior", "unset"));
+  }
+
+  return () => { for (const fn of restoreFns) fn(); };
 }
 
 function findScrollContainer(element) {

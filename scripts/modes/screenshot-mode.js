@@ -107,7 +107,7 @@ class ScreenshotMode {
     });
 
     const stitcher = new Stitcher(elemW * dpr, elemH * dpr);
-    const restoreOverlays = hideOverlays(el);
+    const restorePage = preparePageForCapture(el, container);
 
     let tile;
     while ((tile = scroller.next())) {
@@ -142,7 +142,7 @@ class ScreenshotMode {
     }
 
     scroller.restore();
-    restoreOverlays();
+    restorePage();
     const blob = await stitcher.finalize();
     const dataUrl = await blobToDataUrl(blob);
 
