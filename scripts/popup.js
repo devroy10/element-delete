@@ -13,6 +13,14 @@ class PopupManager {
     this.init();
   }
 
+  async sendMessage(tabId, message) {
+    try {
+      return await chrome.tabs.sendMessage(tabId, message);
+    } catch {
+      return null;
+    }
+  }
+
   init() {
     this.bindEvents();
     this.checkExtensionStatus();
@@ -43,51 +51,41 @@ class PopupManager {
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (tab) {
-        chrome.tabs.sendMessage(
-          tab.id,
-          { type: "GET_STATUS" },
-          (response) => {
-            if (response) {
-              this.isActive = response.isActive;
-              this.currentMode = response.mode || "delete";
-              this.syncUI();
-            }
-          }
-        );
+        const response = await this.sendMessage(tab.id, { type: "GET_STATUS" });
+        if (response) {
+          this.isActive = response.isActive;
+          this.currentMode = response.mode || "delete";
+          this.syncUI();
+        }
       }
-    } catch (error) {
-      console.error("Failed to check status:", error);
+    } catch {
+      // content script not available
     }
   }
 
   async toggleMode() {
-    try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (!tab) return;
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab) return;
 
-      if (this.isActive) {
-        chrome.tabs.sendMessage(tab.id, { type: "DEACTIVATE" });
-        this.isActive = false;
-      } else {
-        chrome.tabs.sendMessage(tab.id, {
-          type: "SET_MODE",
-          mode: this.currentMode,
-        });
-        chrome.tabs.sendMessage(tab.id, { type: "ACTIVATE" });
-        this.isActive = true;
-      }
-      this.syncUI();
-    } catch (error) {
-      console.error("Failed to toggle mode:", error);
+    if (this.isActive) {
+      await this.sendMessage(tab.id, { type: "DEACTIVATE" });
+      this.isActive = false;
+    } else {
+      await this.sendMessage(tab.id, {
+        type: "SET_MODE",
+        mode: this.currentMode,
+      });
+      await this.sendMessage(tab.id, { type: "ACTIVATE" });
+      this.isActive = true;
     }
+    this.syncUI();
   }
 
-  sendSetMode(mode) {
-    chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
-      if (tab) {
-        chrome.tabs.sendMessage(tab.id, { type: "SET_MODE", mode });
-      }
-    });
+  async sendSetMode(mode) {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab) {
+      await this.sendMessage(tab.id, { type: "SET_MODE", mode });
+    }
   }
 
   syncUI() {
